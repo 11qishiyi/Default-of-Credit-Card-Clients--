@@ -1,0 +1,88 @@
+
+01_preprocessing.py — 数据预处理 (9.3K)
+  功能:
+    1. 读取 data/data.xls 原始XLS文件 (30,000行×25列)
+    2. 特征中文命名映射 (如 LIMIT_BAL → 信用额度(NT$))
+    3. 类别变量清理:
+       - 性别: 1→男, 2→女
+       - 教育程度: 0/5/6异常值归并到"其他"
+       - 婚姻状况: 0异常值归并到"其他"
+    4. 构造7个衍生特征:
+       - 月均还款金额 / 月均账单金额
+       - 额度使用率 (账单/额度)
+       - 还款率 (还款/账单)
+       - 最大逾期月数 / 逾期总次数 / 曾有严重逾期
+    5. 独热编码 (性别/教育/婚姻, drop_first)
+    6. 7:3分层划分训练集(21,000)/测试集(9,000)
+    7. StandardScaler标准化数值特征
+  产出: X_train/X_test/y_train/y_test共6个CSV + feature_names.json
+  依赖: numpy, pandas, sklearn
+  运行: python 01_preprocessing.py
+
+
+02_eda.py — 探索性数据分析 (11K)
+  功能:
+    1. 违约率饼图 + 训练/测试集违约率对比
+    2. 类别特征(性别/教育/婚姻)违约率柱状图
+    3. 数值特征(额度/年龄/还款金额/使用率)按违约分组直方图
+    4. 还款状态各月违约率折线图 (B&W优化: 不同线型+标记)
+    5. 最大逾期等级与违约率柱状图
+    6. 关键特征相关性热力图
+    7. 额度使用率×还款率 风险边界散点图
+  产出: 6张PNG (fig01~fig06)
+  依赖: numpy, pandas, matplotlib, seaborn
+  运行: python 02_eda.py
+
+
+03_feature_eng.py — 特征工程 (8.4K)
+  功能:
+    1. 对20个数值候选特征执行等频分箱(5箱)
+    2. 计算每个分箱的WOE (Weight of Evidence) 和整体IV值
+       WOE = ln(违约占比 / 正常占比)  — 高WOE→高风险
+       IV  = Σ((违约% − 正常%) × WOE) — 衡量全局区分力
+    3. IV值排名可视化 (B&W优化: 灰阶+hatch图案)
+    4. 筛选IV>0.02的12个特征进行WOE转换
+    5. 导出WOE特征供逻辑回归使用
+  产出: X_train_woe/X_test_woe共2个CSV + final_features.json + fig07
+  依赖: numpy, pandas, matplotlib
+  运行: python 03_feature_eng.py
+
+
+04_modeling.py — 模型训练与评估 (9.2K)
+  功能:
+    1. 逻辑回归 (L2正则化, WOE特征, 强可解释性)
+    2. GBDT梯度提升决策树 (200棵树, max_depth=4, lr=0.05)
+    3. 多维评估: AUC, KS, F1, Accuracy
+    4. ROC曲线可视化 (B&W: 实线/虚线区分LR/GBDT)
+    5. KS曲线可视化 (B&W: 线型+文字标注区分TPR/FPR/KS)
+    6. 混淆矩阵对比
+    7. 模型持久化为pkl文件
+  产出: model_lr.pkl + model_gbdt.pkl + model_results.json + fig08/09/10
+  依赖: numpy, pandas, sklearn, matplotlib, seaborn, joblib
+  运行: python 04_modeling.py
+
+
+05_insights.py — 可解释性与业务洞察 (15K)
+  功能:
+    1. GBDT内置特征重要性排名 + 可视化 (B&W灰阶)
+    2. Permutation Importance (打乱特征后AUC下降幅度)
+    3. 逻辑回归WOE系数分析 + 可视化 (正→高风险, 负→低风险)
+    4. 信用评分卡构建 (base=600, PDO=50)
+       评分 = 600 − factor×(截距 + Σ βᵢ·WOEᵢ)
+    5. 评分分布直方图 (B&W: 正常=浅灰, 违约=深灰+斜线hatch)
+    6. 风控阈值策略分析:
+       - 遍历阈值0.05~0.90
+       - 计算抓获率/误拒率/通过率
+       - 可视化权衡曲线 (B&W: 不同标记+线型)
+    7. 业务指标汇总输出
+  产出: fig11~fig15
+  依赖: numpy, pandas, sklearn, matplotlib, joblib
+  备注: 由于网络限制无法安装SHAP, 使用sklearn内置特征重要性替代
+  运行: python 05_insights.py
+
+
+
+———— 环境依赖 ————
+
+  Python 3.8+
+  pip install pandas numpy scikit-learn matplotlib seaborn xlrd joblib python-docx

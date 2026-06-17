@@ -1,0 +1,87 @@
+
+项目: 台湾信用卡违约预测 — 基于机器学习的信贷风控分析
+
+———— 原始数据 ————
+
+data.xls (2.3M)
+  来源: UCI机器学习数据库
+  内容: 30,000行×24列, 台湾信用卡客户月度账户数据
+  备注: 一切分析的起点, 所有其他文件均可由此重跑生成
+
+
+———— 01_preprocessing.py 产出 ————
+
+X_train.csv (3.8M)
+  训练集特征, 21,000行, 含原始数值+衍生特征+独热编码列
+
+X_test.csv (1.7M)
+  测试集特征, 9,000行, 格式与X_train一致
+
+y_train.csv (62K)
+  训练集标签, 21,000行, 单列"次月违约"(0=正常, 1=违约)
+
+y_test.csv (27K)
+  测试集标签, 9,000行, 格式同y_train
+
+X_train_scaled.csv (12M)
+  StandardScaler标准化后的训练特征, 供GBDT模型使用
+
+X_test_scaled.csv (5.0M)
+  StandardScaler标准化后的测试特征, 供GBDT模型使用
+
+feature_names.json (1.7K)
+  元数据文件, 记录:
+  - numeric_cols: 哪些列是数值型(27个)
+  - all_cols: 全部特征列名(33个)
+  供后续脚本读取以区分数值特征和独热编码特征
+
+
+———— 03_feature_eng.py 产出 ————
+
+X_train_woe.csv (4.9M)
+  WOE(证据权重)转换后的训练特征, 仅保留IV>0.02的12个特征
+  供逻辑回归模型使用 (WOE值确保系数可解释)
+
+X_test_woe.csv (2.1M)
+  WOE转换后的测试特征, 12列, 与X_train_woe特征一致
+
+final_features.json (1.5K)
+  元数据文件, 记录:
+  - selected_features: 经IV筛选后入选的12个原始特征名
+  - woe_features: WOE转换后的12个列名
+  - iv_results: 每个候选特征的IV值
+
+
+———— 04_modeling.py 产出 ————
+
+model_lr.pkl (1.5K)
+  训练好的逻辑回归模型, joblib序列化格式
+  L2正则化(C=1.0), 使用WOE特征作为输入
+
+model_gbdt.pkl (486K)
+  训练好的GBDT(梯度提升决策树)模型, joblib序列化格式
+  200棵基学习器, max_depth=4, learning_rate=0.05
+
+model_results.json (400B)
+  模型评估结果汇总, 包含:
+  - logistic_regression: AUC/KS/F1/Accuracy
+  - gbdt: AUC/KS/F1/Accuracy
+
+
+———— 依赖关系 ————
+
+  data.xls
+    → 01_preprocessing.py
+        → X_train.csv / X_test.csv / y_train.csv / y_test.csv
+        → X_train_scaled.csv / X_test_scaled.csv
+        → feature_names.json
+    → 03_feature_eng.py
+        → X_train_woe.csv / X_test_woe.csv
+        → final_features.json
+    → 04_modeling.py
+        → model_lr.pkl / model_gbdt.pkl
+        → model_results.json
+    → 05_insights.py
+        读取以上全部文件, 生成可解释性/风控策略图表
+
+

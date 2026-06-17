@@ -1,0 +1,26 @@
+# 数据文件 (重跑脚本即可生成)
+data/*.csv
+data/data.xls
+
+# 模型文件
+data/*.pkl
+
+# 压缩包备份
+*.zip
+
+# Office 临时文件
+~$*
+
+# 报告文档
+项目报告.docx
+report/项目报告.docx
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
